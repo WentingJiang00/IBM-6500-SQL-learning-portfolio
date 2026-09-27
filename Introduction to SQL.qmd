@@ -1,0 +1,89 @@
+---
+title: "Introduction to SQL: Course Completion and Learning Notes"
+author: "Wenting Jiang"
+date: Sep 26,2026
+format:
+  html:
+    toc: true
+    toc-title: "Contents"
+    toc-depth: 3
+    number-sections: true
+    smooth-scroll: true
+    embed-resources: true
+---
+
+## Course-Completion Evidence
+
+![](images/SQL.png) I completed the DataCamp Introduction to SQL course on November 28, 2025. The course introduced relational databases and basic SQL querying skills.
+
+## Chapter 1: Relational Databases
+
+### Main Ideas
+
+Chapter 1 introduced the basic structure of relational databases. I learned that a database stores organized information in tables. Each table contains fields, also called columns, and records, also called rows. I also learned about unique IDs, naming conventions, data types, and database servers.
+
+### Important SQL Concepts
+
+-   Database: an organized collection of data
+-   Table: a structure that stores related information
+-   Field or column: one type of information in a table
+-   Record or row: one complete observation
+-   Primary key: a unique identifier for each record
+-   Data type: the format of the stored data
+-   Database server: a system that stores and manages databases
+
+### Example
+
+The following example shows how a table could be organized:
+
+``` sql
+CREATE TABLE books (
+    book_id INTEGER PRIMARY KEY,
+    title VARCHAR(200),
+    author VARCHAR(150),
+    genre VARCHAR(50),
+    publication_year INTEGER
+);
+```
+
+This table contains information about books. The book_id column is the primary key because each book should have a unique ID. The other columns store the title, author, genre, and publication year.
+
+## Chapter 2: Querying
+
+### Main Ideas
+
+Chapter 2 focused on writing SQL queries to retrieve information from relational databases. I learned how to use `SELECT` and `FROM` to choose data from a table. I also learned how to select unique values with `DISTINCT`, rename columns with `AS`, limit the number of results, and create views. In addition, the chapter introduced differences between SQL flavors such as PostgreSQL and SQL Server.
+
+### Important SQL Syntax
+
+-   `SELECT`: specifies the columns to retrieve
+-   `FROM`: specifies the table that contains the data
+-   `*`: selects all columns
+-   `DISTINCT`: returns only unique values
+-   `LIMIT`: limits the number of rows returned
+-   `CREATE VIEW`: saves a query as a reusable view
+
+### Examples
+
+The following query selects specific columns from the `books` table:
+
+``` sql
+SELECT title, author
+FROM books;
+```
+
+This query returns only the title and author columns. Selecting specific columns makes the results easier to read.
+
+## Connection to the CEP Project
+
+In the CEP project, Salesforce data may include tables for users, accounts, activities, and adoption records. Understanding tables, fields, records, unique IDs, and data types can help organize CRM data and reduce duplicate or inconsistent records.
+
+## Overall Reflection and Future Reference
+
+The most useful skills I learned were understanding relational databases and writing basic SQL queries. I learned how to use `SELECT`, `FROM`, `DISTINCT`, `AS`, and `LIMIT` to retrieve and organize data.
+
+The most challenging concepts were understanding the relationships between tables, fields, records, and data types. I also needed practice remembering the correct structure and order of SQL statements.
+
+SQL could support digital marketing analytics, customer insights, survey research, and the CEP project by helping analysts organize customer data, examine user activity, identify patterns, and compare different user groups.
+
+In the future, I expect to review database organization, `SELECT`, `DISTINCT`, aliases, and query limits. I would also like to learn more about filtering, grouping, aggregate functions, and joining multiple tables.
