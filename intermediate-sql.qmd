@@ -1,0 +1,141 @@
+---
+title: "Intermediate SQL: Course Completion and Learning Notes"
+author: "Wenting Jiang"
+date: 2026-11-04
+format:
+  html:
+    toc: true
+    toc-title: "Contents"
+    toc-depth: 3
+    number-sections: false
+    smooth-scroll: true
+    embed-resources: true
+---
+
+# Course-Completion Evidence
+
+![](images/certificate.png)
+
+# Learning Notes and Key Takeaway Conditional Transformations with `CASE`
+
+### Main ideas
+
+`CASE` converts row-level conditions into useful categories or calculated values. It works like an ordered set of “if, then, otherwise” rules. SQL evaluates the `WHEN` conditions from top to bottom and returns the result associated with the first true condition. The order is therefore important when categories overlap.
+
+This pattern is especially useful for binning numeric values, standardizing inconsistent data, and creating business labels. In the flight exercises, I used it to classify delays, aircraft size, and occupancy. Boundary values must be translated carefully from the business rule into operators such as `<`, `<=`, `>=`, and `>`.
+
+### When to use it
+
+Use `CASE` when raw values need to become interpretable segments or when a calculation should apply only to certain rows. Examples include classifying customers by lifetime value, labeling survey scores, grouping campaign performance, or standardizing units before aggregation.
+
+### SQL example
+
+``` sql
+SELECT
+    flight_id,
+    delay,
+    CASE
+        WHEN delay <= -5 THEN 'Early'
+        WHEN delay < 5 THEN 'On time'
+        ELSE 'Late'
+    END AS delay_status
+FROM flights;
+```
+
+### Explanation
+
+The query checks each flight's delay in order. A delay of `-5` is **Early** because it satisfies `delay <= -5`. A delay of `0` is **On time** because it fails the first condition but satisfies `delay < 5`. A delay of `5` becomes **Late** because it fails both conditions and reaches `ELSE`. Writing the rules in this order prevents a boundary value from entering the wrong category.
+
+## Pre-Aggregation Filtering with `WHERE`
+
+### Main ideas
+
+`WHERE` removes individual records before grouping or aggregation. This means every later calculation uses only rows that meet the selected condition. A filter should match the population defined by the analytical question. For example, an arrival-delay analysis should exclude canceled and diverted flights because those records do not represent completed arrivals.
+
+Multiple conditions can be combined with `AND` and `OR`. Parentheses make the intended logic explicit when both operators appear. Text values are placed in quotes, while numeric comparisons are not.
+
+### SQL example
+
+``` sql
+SELECT
+    airline,
+    AVG(delay) AS average_delay
+FROM flights
+WHERE flight_status = 'arrived'
+GROUP BY airline;
+```
+
+### Explanation
+
+The database first reads `flights`, then keeps only rows whose status is `arrived`. It groups those remaining rows by airline and calculates an average delay for each group. Canceled and diverted flights do not influence the average because they were removed before `AVG()` was evaluated.
+
+## Grouped Summaries and Post-Aggregation Filtering
+
+### Main ideas
+
+`GROUP BY` changes the level of analysis from individual rows to one result per category. Aggregate functions then summarize each group. `HAVING` filters those completed groups, whereas `WHERE` filters source rows before groups exist.
+
+This distinction also explains why a `SELECT` alias often cannot be used in `WHERE`: SQL logically processes `WHERE` before the expression in `SELECT` has created that alias. When filtering an aggregate result, the portable approach is to repeat the aggregate expression in `HAVING`.
+
+### SQL example
+
+``` sql
+SELECT
+    airline,
+    COUNT(*) AS arrived_flights,
+    AVG(delay) AS average_delay
+FROM flights
+WHERE flight_status = 'arrived'
+GROUP BY airline
+HAVING AVG(delay) > 5;
+```
+
+### Explanation
+
+`WHERE` first limits the data to arrived flights. `GROUP BY` forms one group per airline. `COUNT(*)` and `AVG(delay)` calculate metrics for those groups. Finally, `HAVING` keeps only airlines whose arrived flights have an average delay greater than five minutes. An airline with an average of exactly five minutes is excluded because the condition uses `>` rather than `>=`.
+
+## Conditional Aggregation
+
+### Main ideas
+
+Conditional aggregation combines `CASE` with an aggregate function so that several related metrics can be calculated from the same grouped dataset. A `CASE` expression returns a value only for qualifying rows and returns `NULL` otherwise. Functions such as `AVG()` and `COUNT(column)` ignore `NULL`, so nonqualifying rows do not affect those calculations.
+
+The pattern changes slightly by metric. For a conditional average, the omitted `ELSE` produces `NULL`, which is desirable. For a conditional count, `COUNT(CASE WHEN ... THEN id END)` counts only non-`NULL` IDs. For a conditional total, `SUM(CASE WHEN ... THEN value ELSE 0 END)` contributes zero for rows outside the condition.
+
+### SQL example
+
+``` sql
+SELECT
+    airline,
+    COUNT(*) AS total_flights,
+    COUNT(CASE
+              WHEN flight_status = 'canceled' THEN flight_id
+          END) AS canceled_flights,
+    100.0 * COUNT(CASE
+                      WHEN flight_status = 'canceled' THEN flight_id
+                  END) / COUNT(*) AS cancellation_rate
+FROM flights
+GROUP BY airline;
+```
+
+### Explanation
+
+The denominator counts every flight in an airline's group. The conditional numerator returns `flight_id` only when the status is `canceled`; all other rows become `NULL` and are ignored by `COUNT`. Dividing the two counts and multiplying by `100.0` produces the cancellation percentage. Using `100.0` also helps avoid integer-division behavior in SQL dialects that distinguish integer and decimal arithmetic.
+
+### CEP application
+
+The same structure can calculate conversion rate, email click-through rate, survey completion rate, repeat-purchase rate, or the share of sessions that engaged with a key page. The condition in the numerator defines the desired business event, while the denominator defines the eligible population.
+
+# Overall Reflection and Series Synthesis
+
+The most useful idea in this course was learning to translate a business question into the correct stage of a query. `WHERE` answers which source rows belong in the analysis, `GROUP BY` defines the reporting level, `CASE` creates business logic, and `HAVING` determines which completed groups should remain. Conditional aggregation was especially valuable because it produced overall and subset KPIs in a single query.
+
+The most challenging concept was distinguishing row-level filtering from group-level filtering. At first, it seemed natural to place every condition in `WHERE`, including a condition on an average. Reviewing SQL's logical processing order resolved the confusion: an average does not exist until after rows have been grouped, so it must be filtered with `HAVING`. Boundary conditions in `CASE` also required careful attention. Testing values such as `-5`, `0`, and `5` helped confirm that the categories matched the written rules.
+
+This course extended Introduction to SQL by moving beyond retrieving rows and toward producing decision-ready summaries. Instead of only selecting and filtering fields, I can now define segments, compare groups, calculate conditional KPIs, and enforce minimum sample sizes. These patterns are portable to BigQuery, although I will still check details such as data types, safe division, date functions, and fully qualified table names.
+
+For digital marketing and customer insights, I can apply these techniques to conversion funnels, campaign performance, survey response patterns, customer retention, and GA4 event data. A query can compare overall results with a strategically important subset without losing a consistent denominator or reporting grain. For my CEP, I expect grouped summaries, conditional rates, and clearly documented eligibility rules to be especially important for making results reproducible.
+
+The portfolio sections I expect to consult most often are the conditional-aggregation patterns, the explanation of `WHERE` versus `HAVING`, and the integrated-query checklist. Together with my Introduction to SQL and Introduction to BigQuery reports, these notes provide a reusable path from basic data retrieval to analysis in a cloud data warehouse.
+
+# Appendix: 
